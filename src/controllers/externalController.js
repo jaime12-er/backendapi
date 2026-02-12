@@ -13,6 +13,8 @@ const poblarProductos = async (request, response) => {
 
             const stock = Math.floor(Math.random() * 50) + 1;
 
+            
+
             const query = `
                 INSERT INTO productos
                 (nombre, precio, stock, descripcion, imagen_url)
