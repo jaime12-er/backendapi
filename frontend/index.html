@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Búsqueda de Productos</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 2.5em;
+        }
+
+        .search-section {
+            margin-bottom: 30px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .search-container {
+            flex: 1;
+            min-width: 250px;
+            position: relative;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 5px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-status {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #667eea;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 5px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .btn-clear {
+            padding: 12px 20px;
+            background-color: #f67e7e;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+        }
+
+        .btn-clear:hover {
+            background-color: #e85c5c;
+        }
+
+        .btn-clear:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        thead {
+            background-color: #667eea;
+            color: white;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            border: none;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        tbody tr {
+            transition: background-color 0.2s;
+        }
+
+        tbody tr:hover {
+            background-color: #f8f9ff;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px 20px;
+            background-color: #f8f9ff;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .no-results-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .no-results-text {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .no-results-term {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading-text {
+            font-size: 16px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .error-message {
+            background-color: #ffe5e5;
+            border: 2px solid #f67e7e;
+            color: #d63031;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .info-bar {
+            background-color: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 3px;
+            color: #333;
+        }
+
+        .info-bar strong {
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .search-section {
+                flex-direction: column;
+            }
+
+            .search-container {
+                min-width: unset;
+            }
+
+            table {
+                font-size: 14px;
+            }
+
+            th, td {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Búsqueda de Productos</h1>
+
+        <div class="search-section">
+            <div class="search-container">
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Busca por nombre o descripción... (ej: cotton, shirt, etc)"
+                    autocomplete="off"
+                >
+                <div class="search-status" id="searchStatus"></div>
+            </div>
+            <button class="btn-clear" id="clearBtn">Limpiar búsqueda</button>
+        </div>
+
+        <div id="content">
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:4000/api/productos';
+        const searchInput = document.getElementById('searchInput');
+        const clearBtn = document.getElementById('clearBtn');
+        const content = document.getElementById('content');
+        const searchStatus = document.getElementById('searchStatus');
+
+        let debounceTimer;
+        let currentSearchTerm = '';
+
+        function renderTable(productos) {
+            if (productos.length === 0) {
+                content.innerHTML = `
+                    <div class="no-results">
+                        <div class="no-results-icon">😔</div>
+                        <div class="no-results-text">No encontramos productos que coincidan con <span class="no-results-term">'${currentSearchTerm}'</span></div>
+                        <p style="color: #999; margin-top: 10px; font-size: 14px;">Intenta con otros términos de búsqueda</p>
+                    </div>
+                `;
+                clearBtn.disabled = false;
+                searchStatus.innerHTML = '';
+                return;
+            }
+
+            let tableHTML = `
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>NOMBRE</th>
+                                <th>DESCRIPCIÓN</th>
+                                <th>CATEGORÍA</th>
+                                <th>PRECIO</th>
+                                <th>STOCK</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            productos.forEach(producto => {
+                const categoria = producto.categoria_id || 'N/A';
+                const precio = parseFloat(producto.precio).toFixed(2);
+                tableHTML += `
+                    <tr>
+                        <td>${escapeHtml(producto.nombre)}</td>
+                        <td>${escapeHtml(producto.descripcion.substring(0, 100))}${producto.descripcion.length > 100 ? '...' : ''}</td>
+                        <td>${categoria}</td>
+                        <td>$${precio}</td>
+                        <td>${producto.stock}</td>
+                    </tr>
+                `;
+            });
+
+            tableHTML += `
+                        </tbody>
+                    </table>
+                </div>
+                <div class="info-bar">
+                    <strong>Resultados:</strong> Se encontraron ${productos.length} producto(s)
+                </div>
+            `;
+
+            content.innerHTML = tableHTML;
+            clearBtn.disabled = false;
+            searchStatus.innerHTML = '';
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        async function loadAllProductos() {
+            try {
+                searchStatus.innerHTML = '<span class="spinner"></span> Cargando...';
+                const response = await fetch(`${API_URL}`);
+                const data = await response.json();
+                currentSearchTerm = '';
+                renderTable(data.productos);
+            } catch (error) {
+                content.innerHTML = `
+                    <div class="error-message">
+                        Error al cargar productos. Asegúrate de que el servidor esté corriendo en ${API_URL}
+                    </div>
+                `;
+                searchStatus.innerHTML = '';
+                console.error('Error:', error);
+            }
+        }
+
+      s
+        async function searchProductos(term) {
+            if (!term.trim()) {
+                loadAllProductos();
+                return;
+            }
+
+            currentSearchTerm = term;
+            try {
+                searchStatus.innerHTML = '<span class="spinner"></span> Buscando...';
+                clearBtn.disabled = true;
+
+                const response = await fetch(`${API_URL}/search?q=${encodeURIComponent(term)}`);
+
+                if (!response.ok) {
+                    if (response.status === 400) {
+                        content.innerHTML = `
+                            <div class="error-message">
+                                Error: Por favor ingresa un término de búsqueda válido
+                            </div>
+                        `;
+                    } else {
+                        content.innerHTML = `
+                            <div class="error-message">
+                                Error en la búsqueda. Por favor intenta de nuevo.
+                            </div>
+                        `;
+                    }
+                    searchStatus.innerHTML = '';
+                    return;
+                }
+
+                const data = await response.json();
+                renderTable(data.productos);
+            } catch (error) {
+                content.innerHTML = `
+                    <div class="error-message">
+                        Error al buscar productos. Asegúrate de que el servidor esté disponible.
+                    </div>
+                `;
+                searchStatus.innerHTML = '';
+                console.error('Error:', error);
+            }
+        }
+
+    
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            const term = e.target.value;
+
+            debounceTimer = setTimeout(() => {
+                searchProductos(term);
+            }, 300);
+        });
+
+        clearBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            loadAllProductos();
+        });
+
+        window.addEventListener('load', loadAllProductos);
+    </script>
+</body>
+</html>
